@@ -82,7 +82,14 @@ if __name__ == '__main__':
         port = newport = int( sys.argv[1] )
         newhost = sys.argv[2]
         if len( sys.argv ) == 4: newport = int( sys.argv[3] )
-        Pinhole( port, newhost, newport ).start()
-    else:
-        Pinhole( 80, 'hydrogen', 80 ).start()
-        Pinhole( 23, 'hydrogen', 23 ).start()
+        t = Pinhole( port, newhost, newport )
+        t.daemon = True
+        t.start()
+        try:
+            while True:
+                t.join(1)
+        except KeyboardInterrupt:
+            print "^C is caught, exiting"
+    #else:
+        #Pinhole( 80, 'hydrogen', 80 ).start()
+        #Pinhole( 23, 'hydrogen', 23 ).start()
