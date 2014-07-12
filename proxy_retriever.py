@@ -6,7 +6,8 @@ from HTMLParser import HTMLParser
 
 
 class ProxyInfo:
-    def __init__(self, ip = "0.0.0.0", port = 0, speed = 0.0, level = "none"):
+    levelDict = ["Elite", "Anonymous", "Transparent", "None"]
+    def __init__(self, ip = "0.0.0.0", port = 0, speed = 0.0, level = 0):
         self.ip_ = ip
         self.port_ = port
         self.speed_ = speed
@@ -15,11 +16,14 @@ class ProxyInfo:
 
     def __str__(self):
         output = self.ip_ + " " + str(self.port_) + " " + \
-                 str(self.speed_) + " " + self.level_
+                 str(self.speed_) + " " + ProxyInfo.levelDict[self.level_]
 
         return output
+    def toIpPort(self):
+        return (self.ip_, self.port_)
 
 class ProxyParser(HTMLParser):
+    levelDict = {"Elite": 0, "Anonymous": 1, "Transparent": 2}
     def __init__(self, *args, **kwargs):
         self.title_list = []
         self.proxy_list = [ProxyInfo()]
@@ -81,7 +85,12 @@ class ProxyParser(HTMLParser):
                     #print "ip: ", result.group(0)
                 result = re.match('(Transparent|Anonymous|Elite)',data.strip())
                 if result:
-                    self.proxy_list[-1].level_ = result.group(0)
+                    try:
+                        self.proxy_list[-1].level_ = \
+                                ProxyParser.levelDict[result.group(0)]
+                    except:
+                        #parser error, lowest level
+                        self.proxy_list[-1].level_ = 3
                     #print "anonymity: ", result.group(0)
 
                 result = re.match('China',data.strip())
@@ -126,20 +135,41 @@ class ProxyParser(HTMLParser):
 
         return output
 
-    def toProxyList(self):
-        return self.proxy_list
+    def toProxyList(self, **kwargs):
+        result_list = self.proxy_list
+        level = kwargs.get('levelNAbove', None)
+        if level != None:
+            result_list = [a_proxy for a_proxy in result_list \
+                          if a_proxy.level_ <= int(level)]
+
+        return result_list
 
 
+class ProxyRetriever:
+    SOURCE_URL = 'http://www.proxynova.com/proxy-server-list/country-cn/'
 
+    def __init__(self):
+        self.proxy_list = []
 
-proxy_list = urllib.urlopen('http://www.proxynova.com/proxy-server-list/country-cn/')
+    def getAProxy(self):
+        if len(self.proxy_list) == 0:
+            proxy_file = urllib.urlopen(ProxyRetriever.SOURCE_URL)
+            pParser = ProxyParser()
+            pParser.feed(proxy_file.read())
+            proxy_file.close()
 
-#print proxy_list.read()
+            curLevel = 0
+            while curLevel <= 3 and \
+                  len(pParser.toProxyList(levelNAbove=curLevel)) == 0:
+                curLevel += 1
 
-#proxy_list = open('web.html', 'r')
+            for aProxy in pParser.toProxyList(levelNAbove=curLevel):
+                self.proxy_list.append(aProxy.toIpPort())
 
-pParser = ProxyParser()
+        return self.proxy_list[0]
 
-pParser.feed(proxy_list.read())
-
-print pParser
+    def invalidateProxy(self, proxy):
+        try:
+            self.proxy_list.remove(proxy)
+        except:
+            pass

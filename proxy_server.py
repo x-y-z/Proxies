@@ -19,6 +19,7 @@ import sys
 from socket import *
 from threading import Thread
 import time
+from proxy_retriever import ProxyRetriever
 
 LOGGING = 1
 
@@ -53,21 +54,40 @@ class PipeThread( Thread ):
         log( '%s pipes active' % len( PipeThread.pipes ))
 
 class Pinhole( Thread ):
-    def __init__( self, port, newhost, newport ):
+    def __init__( self, port):
         Thread.__init__( self )
+        self.proxy_retriever = ProxyRetriever()
+        newhost, newport = self.proxy_retriever.getAProxy()
         log( 'Redirecting: localhost:%s -> %s:%s' % ( port, newhost, newport ))
         self.newhost = newhost
         self.newport = newport
         self.sock = socket( AF_INET, SOCK_STREAM )
         self.sock.bind(( '', port ))
         self.sock.listen(5)
+        self.running = True
 
     def run( self ):
-        while 1:
+        while self.running:
             newsock, address = self.sock.accept()
             log( 'Creating new session for %s %s ' % address )
-            fwd = socket( AF_INET, SOCK_STREAM )
-            fwd.connect(( self.newhost, self.newport ))
+            #fwd = socket( AF_INET, SOCK_STREAM )
+            while 1:
+                try:
+                    fwd = create_connection(( self.newhost, self.newport ), 1)
+                except socket.timeout:
+                    newhost, newport = self.proxy_retriever.getAProxy()
+                    self.newhost = newhost
+                    self.newport = newport
+                    continue
+                except Exception as e:
+                    print e
+                    self.sock.close()
+                    self.running = False
+                break
+
+            if not self.running:
+                break
+
             PipeThread( newsock, fwd ).start()
             PipeThread( fwd, newsock ).start()
 
@@ -76,17 +96,15 @@ if __name__ == '__main__':
     print 'Starting Pinhole'
 
     import sys
-    sys.stdout = open( 'pinhole.log', 'w' )
+    #sys.stdout = open( 'pinhole.log', 'w' )
 
     if len( sys.argv ) > 1:
-        port = newport = int( sys.argv[1] )
-        newhost = sys.argv[2]
-        if len( sys.argv ) == 4: newport = int( sys.argv[3] )
-        t = Pinhole( port, newhost, newport )
+        port = int( sys.argv[1] )
+        t = Pinhole(port)
         t.daemon = True
         t.start()
         try:
-            while True:
+            while t.isAlive():
                 t.join(1)
         except KeyboardInterrupt:
             print "^C is caught, exiting"
