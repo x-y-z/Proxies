@@ -176,3 +176,8 @@ class ProxyRetriever:
             self.proxy_list.remove(proxy)
         except:
             pass
+
+
+if __name__ == '__main__':
+    proxy = ProxyRetriever()
+    print proxy.getAProxy()

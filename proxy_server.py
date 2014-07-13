@@ -93,21 +93,25 @@ class Pinhole( Thread ):
 
 if __name__ == '__main__':
 
-    print 'Starting Pinhole'
 
-    import sys
+    #import sys
     #sys.stdout = open( 'pinhole.log', 'w' )
 
-    if len( sys.argv ) > 1:
-        port = int( sys.argv[1] )
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option("--local-port", type="int", action="store", default=7890,\
+            help="Specify local port(default:7890) this program will listen")
+
+    options, args = parser.parse_args()
+
+    if options.local_port:
+        port = options.local_port
         t = Pinhole(port)
         t.daemon = True
+        print 'Starting Proxy...'
         t.start()
         try:
             while t.isAlive():
                 t.join(1)
         except KeyboardInterrupt:
             print "^C is caught, exiting"
-    #else:
-        #Pinhole( 80, 'hydrogen', 80 ).start()
-        #Pinhole( 23, 'hydrogen', 23 ).start()
