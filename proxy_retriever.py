@@ -178,6 +178,7 @@ class ProxyRetriever:
                 self.proxy_list.append(aProxy)
 
         headProxy = self.proxy_list[0]
+        self.proxy_list.pop()
         #print "Use proxy: ", headProxy
         return headProxy.toIpPort()
 
