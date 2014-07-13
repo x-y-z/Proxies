@@ -74,7 +74,7 @@ class Pinhole( Thread ):
             while 1:
                 try:
                     fwd = create_connection(( self.newhost, self.newport ), 1)
-                except socket.timeout:
+                except timeout:
                     newhost, newport = self.proxy_retriever.getAProxy()
                     self.newhost = newhost
                     self.newport = newport
