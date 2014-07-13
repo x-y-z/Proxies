@@ -54,9 +54,9 @@ class PipeThread( Thread ):
         log( '%s pipes active' % len( PipeThread.pipes ))
 
 class Pinhole( Thread ):
-    def __init__( self, port):
+    def __init__( self, port, verify_163):
         Thread.__init__( self )
-        self.proxy_retriever = ProxyRetriever(True)
+        self.proxy_retriever = ProxyRetriever(verify_163)
         newhost, newport = self.proxy_retriever.getAProxy()
         log( 'Redirecting: localhost:%s -> %s:%s' % ( port, newhost, newport ))
         self.newhost = newhost
@@ -99,14 +99,20 @@ if __name__ == '__main__':
 
     from optparse import OptionParser
     parser = OptionParser()
-    parser.add_option("--local-port", type="int", action="store", default=7890,\
-            help="Specify local port(default:7890) this program will listen")
+    parser.add_option("--local-port", type="int", action="store", \
+                      default=7890, \
+                      help="Specify local port(default:7890) \
+                      this program will listen")
+
+    parser.add_option("--verify-163", action="store_true", \
+                      default=False, \
+                      help="Verify proxy with 163 isMainLand")
 
     options, args = parser.parse_args()
 
     if options.local_port:
         port = options.local_port
-        t = Pinhole(port)
+        t = Pinhole(port, options.verify_163)
         t.daemon = True
         print 'Starting Proxy...'
         t.start()

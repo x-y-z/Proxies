@@ -161,7 +161,7 @@ class ProxyRetriever:
 
 
     def getAProxy(self):
-        if len(self.proxy_list) == 0:
+        while len(self.proxy_list) == 0:
             proxy_file = urllib.urlopen(ProxyRetriever.SOURCE_URL)
             pParser = ProxyParser()
             pParser.feed(proxy_file.read())
@@ -177,8 +177,16 @@ class ProxyRetriever:
                                 speed_limit=self.speed_limit):
                 self.proxy_list.append(aProxy)
 
-        headProxy = self.proxy_list[0]
-        self.proxy_list.pop()
+            headProxy = self.proxy_list[0]
+            self.proxy_list.pop()
+            if self.verify_with_163:
+                addr, port = headProxy.toIpPort()
+                while ProxyRetriever.verifyAgainst163(addr, port) > 0 and \
+                      len(self.proxy_list) > 0:
+                    headProxy = self.proxy_list[0]
+                    self.proxy_list.pop()
+                    addr, port = headProxy.toIpPort()
+
         #print "Use proxy: ", headProxy
         return headProxy.toIpPort()
 
@@ -187,6 +195,22 @@ class ProxyRetriever:
             self.proxy_list.remove(proxy)
         except:
             pass
+
+    @staticmethod
+    def verifyAgainst163(proxy_addr, proxy_port):
+        try:
+            import requests
+        except ImportError:
+            print "Please use pip install -r requirements.txt to get", \
+                  "required dependencies"
+            return -1
+        proxy = {"http": "http://"+str(proxy_addr)+":"+str(proxy_port)}
+        r = requests.get(ProxyRetriever.URL_163, proxies=proxy)
+
+        if r.text == "true":
+            return 1
+        else:
+            return 0
 
 
 if __name__ == '__main__':
