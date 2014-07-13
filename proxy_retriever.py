@@ -161,6 +161,7 @@ class ProxyRetriever:
 
 
     def getAProxy(self):
+        headProxy = None
         while len(self.proxy_list) == 0:
             proxy_file = urllib.urlopen(ProxyRetriever.SOURCE_URL)
             pParser = ProxyParser()
@@ -186,6 +187,10 @@ class ProxyRetriever:
                     headProxy = self.proxy_list[0]
                     self.proxy_list.pop()
                     addr, port = headProxy.toIpPort()
+
+        if headProxy == None:
+            headProxy = self.proxy_list[0]
+            self.proxy_list.pop()
 
         #print "Use proxy: ", headProxy
         return headProxy.toIpPort()
