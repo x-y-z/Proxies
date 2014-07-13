@@ -56,7 +56,7 @@ class PipeThread( Thread ):
 class Pinhole( Thread ):
     def __init__( self, port):
         Thread.__init__( self )
-        self.proxy_retriever = ProxyRetriever()
+        self.proxy_retriever = ProxyRetriever(True)
         newhost, newport = self.proxy_retriever.getAProxy()
         log( 'Redirecting: localhost:%s -> %s:%s' % ( port, newhost, newport ))
         self.newhost = newhost

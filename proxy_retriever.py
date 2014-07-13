@@ -137,22 +137,28 @@ class ProxyParser(HTMLParser):
 
     def toProxyList(self, **kwargs):
         result_list = self.proxy_list
-        level = kwargs.get('levelNAbove', None)
+        level = kwargs.get('level_limit', 2)
         if level != None:
             result_list = [a_proxy for a_proxy in result_list \
                           if a_proxy.level_ <= int(level)]
+        speed = kwargs.get('speed_limit', 60.0)
 
         result_list = [a_proxy for a_proxy in result_list \
-                          if a_proxy.speed_ >= 60.0]
+                          if a_proxy.speed_ >= speed]
 
         return result_list
 
 
 class ProxyRetriever:
     SOURCE_URL = 'http://www.proxynova.com/proxy-server-list/country-cn/'
+    URL_163 = 'http://ipservice.163.com/isFromMainland'
 
-    def __init__(self):
+    def __init__(self, verify = False, **kwargs):
         self.proxy_list = []
+        self.verify_with_163 = verify
+        speed = kwargs.get('speed_limit', 60)
+        self.speed_limit = speed
+
 
     def getAProxy(self):
         if len(self.proxy_list) == 0:
@@ -163,13 +169,17 @@ class ProxyRetriever:
 
             curLevel = 0
             while curLevel <= 3 and \
-                  len(pParser.toProxyList(levelNAbove=curLevel)) == 0:
+                  len(pParser.toProxyList(level_limit=curLevel, \
+                                speed_limit=self.speed_limit)) == 0:
                 curLevel += 1
 
-            for aProxy in pParser.toProxyList(levelNAbove=curLevel):
-                self.proxy_list.append(aProxy.toIpPort())
+            for aProxy in pParser.toProxyList(level_limit=curLevel, \
+                                speed_limit=self.speed_limit):
+                self.proxy_list.append(aProxy)
 
-        return self.proxy_list[0]
+        headProxy = self.proxy_list[0]
+        #print "Use proxy: ", headProxy
+        return headProxy.toIpPort()
 
     def invalidateProxy(self, proxy):
         try:
