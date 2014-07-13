@@ -142,6 +142,9 @@ class ProxyParser(HTMLParser):
             result_list = [a_proxy for a_proxy in result_list \
                           if a_proxy.level_ <= int(level)]
 
+        result_list = [a_proxy for a_proxy in result_list \
+                          if a_proxy.speed_ >= 60.0]
+
         return result_list
 
 
